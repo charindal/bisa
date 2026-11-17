@@ -1,0 +1,81 @@
+name: Seed Database
+
+# Manually-triggered seeding for the dev or production VPS.
+#
+# Runs the idempotent SQL script under database/seeds/ directly against
+# the target environment's Postgres container over SSH. Safe to re-run:
+# seed-users.sql only inserts a demo account if that email doesn't exist yet.
+#
+# Dev and prod share one VPS (see deploy.yml) — this just picks the directory/container
+# for the chosen environment on that same host.
+#
+# The script lives in the repo, so this workflow always seeds whatever
+# is currently checked out on the target VPS (dev: $HOME/bisa on the
+# develop branch, prod: /opt/bisa on main) — it does not pull new code
+# itself. Run the deploy workflow first if you want the latest script.
+#
+# Requires: VPS_HOST, VPS_USERNAME, VPS_SSH_KEY, VPS_PORT (optional, default 22)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+      dry_run:
+        description: "Preview only (run inside a transaction that gets rolled back)"
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  seed:
+    name: Seed users on ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Seed via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: DRY_RUN,ENVIRONMENT
+          script: |
+            set -e
+
+            if [ "$ENVIRONMENT" = "prod" ]; then
+              APP_DIR="/opt/bisa"
+              DB_CONTAINER="bisa-prod-db-1"
+            else
+              APP_DIR="$HOME/bisa"
+              DB_CONTAINER="bisa-dev-db-1"
+            fi
+            cd "$APP_DIR" || { echo "$APP_DIR not found on this host"; exit 1; }
+
+            FILE="database/seeds/seed-users.sql"
+            if [ ! -f "$FILE" ]; then
+              echo "$FILE not found - has this host pulled the latest code?"
+              exit 1
+            fi
+
+            echo "Seeding from $(pwd) against container $DB_CONTAINER (dry_run=$DRY_RUN)"
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run - running inside a transaction that gets rolled back:"
+              { echo "BEGIN;"; cat "$FILE"; echo "ROLLBACK;"; } \
+                | docker exec -i "$DB_CONTAINER" psql -U bisa_sis -d bisa_sis -v ON_ERROR_STOP=1 -f -
+              echo "Dry run only - no changes made. Re-run with dry_run=false to apply."
+            else
+              echo "Applying $FILE..."
+              docker exec -i "$DB_CONTAINER" psql -U bisa_sis -d bisa_sis -v ON_ERROR_STOP=1 -f - < "$FILE"
+              echo "Done."
+            fi
