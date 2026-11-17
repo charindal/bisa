@@ -1,0 +1,58 @@
+# Full stack for a VPS (dev or production): Postgres + Spring Boot API + Nginx-served React build.
+# The same images and compose file are reused for both environments; only the .env differs.
+#
+# Port/naming note: this VPS already runs other projects (buildtrac on 80/8080/9090, nactech on
+# 4001, tvyako on 4003, zimdeal on 5090). API_PORT/WEB_PORT below default to ports none of those
+# use. Set COMPOSE_PROJECT_NAME (e.g. bisa-dev / bisa-prod) in .env so dev and prod don't collide
+# on container/network/volume names if they ever land on the same host — Compose otherwise derives
+# the project name from the directory's basename, which is "bisa" either way.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bisa_sis}
+      POSTGRES_USER: ${POSTGRES_USER:-bisa_sis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bisa_sis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    image: ${API_IMAGE:-bisa-sis-api}:${IMAGE_TAG:-latest}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-bisa_sis}
+      DB_USERNAME: ${POSTGRES_USER:-bisa_sis}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (32+ random bytes)}
+      JWT_ACCESS_TTL_MINUTES: ${JWT_ACCESS_TTL_MINUTES:-15}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-7}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-Lax}
+    ports:
+      - "${API_PORT:-8092}:8080"
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    image: ${WEB_IMAGE:-bisa-sis-web}:${IMAGE_TAG:-latest}
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8094}:80"
+    restart: unless-stopped
+
+volumes:
+  db_data:
