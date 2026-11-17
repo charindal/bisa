@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -35,7 +36,10 @@ public class SecurityConfig {
             RestAuthEntryPoints restAuthEntryPoints,
             JwtService jwtService,
             UserDetailsService userDetailsService) {
-        this.allowedOrigins = env.getProperty("app.cors.allowed-origins", "http://localhost:5173").split(",");
+        this.allowedOrigins = Arrays.stream(env.getProperty("app.cors.allowed-origins", "").split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toArray(String[]::new);
         this.restAuthEntryPoints = restAuthEntryPoints;
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
@@ -64,7 +68,17 @@ public class SecurityConfig {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // No configured origins means the frontend is served same-origin (e.g. nginx
+                // proxying /api in front of the SPA) and doesn't need cross-origin support at all.
+                // Registering the CORS filter anyway would reject every request carrying an
+                // Origin header — including same-origin ones — since none would match.
+                .cors(cors -> {
+                    if (allowedOrigins.length > 0) {
+                        cors.configurationSource(corsConfigurationSource());
+                    } else {
+                        cors.disable();
+                    }
+                })
                 .csrf(csrf -> csrf.disable()) // stateless JWT API, no cookie-based session to protect
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
