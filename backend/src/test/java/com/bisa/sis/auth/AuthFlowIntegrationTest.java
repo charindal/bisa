@@ -1,6 +1,5 @@
 package com.bisa.sis.auth;
 
-import com.bisa.sis.PostgresTestContainerConfig;
 import com.bisa.sis.user.Role;
 import com.bisa.sis.user.User;
 import com.bisa.sis.user.UserRepository;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -22,6 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Runs against a real Postgres rather than Testcontainers: Docker-in-Docker isn't reliable on
+ * this project's CI runners (same reason buildtrac's backend avoids Testcontainers), so this
+ * expects a Postgres reachable via spring.datasource (see application.yml defaults / DB_URL env
+ * var) — the "db" service in docker-compose.dev.yml locally, or the "postgres" services: container
+ * in deploy.yml's Backend Tests job in CI.
+ */
 @SpringBootTest(properties = {
         "app.jwt.secret=test-only-secret-key-at-least-32-bytes-long-xx",
         "app.cookie.secure=false",
@@ -29,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.bootstrap.super-admin-password="
 })
 @AutoConfigureMockMvc
-@Import(PostgresTestContainerConfig.class)
 class AuthFlowIntegrationTest {
 
     @Autowired
