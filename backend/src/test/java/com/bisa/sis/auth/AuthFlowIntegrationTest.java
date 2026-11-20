@@ -52,7 +52,7 @@ class AuthFlowIntegrationTest {
     void setUp() {
         userRepository.deleteAll();
         userRepository.save(new User(
-                "lecturer@bisa.test", passwordEncoder.encode("Sup3rSecret!"), "Lee", "Turner", Role.LECTURER));
+                "admin@bisa.test", passwordEncoder.encode("Sup3rSecret!"), "Lee", "Turner", Role.ADMIN));
     }
 
     @Test
@@ -60,10 +60,10 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "lecturer@bisa.test", "password", "Sup3rSecret!"))))
+                                "email", "admin@bisa.test", "password", "Sup3rSecret!"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.user.role").value("LECTURER"))
+                .andExpect(jsonPath("$.user.role").value("ADMIN"))
                 .andExpect(cookie().exists("refresh_token"))
                 .andExpect(cookie().httpOnly("refresh_token", true));
     }
@@ -73,7 +73,7 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "lecturer@bisa.test", "password", "wrong-password"))))
+                                "email", "admin@bisa.test", "password", "wrong-password"))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -82,7 +82,7 @@ class AuthFlowIntegrationTest {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "lecturer@bisa.test", "password", "Sup3rSecret!"))))
+                                "email", "admin@bisa.test", "password", "Sup3rSecret!"))))
                 .andReturn();
         Cookie originalRefreshCookie = loginResult.getResponse().getCookie("refresh_token");
         assertThat(originalRefreshCookie).isNotNull();
@@ -105,7 +105,7 @@ class AuthFlowIntegrationTest {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "email", "lecturer@bisa.test", "password", "Sup3rSecret!"))))
+                                "email", "admin@bisa.test", "password", "Sup3rSecret!"))))
                 .andReturn();
         Cookie refreshCookie = loginResult.getResponse().getCookie("refresh_token");
 
