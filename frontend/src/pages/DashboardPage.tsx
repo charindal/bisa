@@ -2,22 +2,16 @@ import type { ComponentType } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { SuperAdminDashboard } from "./dashboards/SuperAdminDashboard";
 import { AdminDashboard } from "./dashboards/AdminDashboard";
-import { LecturerDashboard } from "./dashboards/LecturerDashboard";
-import { StudentDashboard } from "./dashboards/StudentDashboard";
 import type { Role } from "../auth/types";
 
 const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: "Super Admin",
   ADMIN: "Admin",
-  LECTURER: "Lecturer",
-  STUDENT: "Student",
 };
 
 const DASHBOARDS: Record<Role, ComponentType> = {
   SUPER_ADMIN: SuperAdminDashboard,
   ADMIN: AdminDashboard,
-  LECTURER: LecturerDashboard,
-  STUDENT: StudentDashboard,
 };
 
 export function DashboardPage() {

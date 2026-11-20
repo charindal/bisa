@@ -16,8 +16,6 @@
 --
 -- Logins:
 --   registrar@bisa.local / Demo1234!  (ADMIN)
---   lecturer@bisa.local  / Demo1234!  (LECTURER)
---   student@bisa.local   / Demo1234!  (STUDENT)
 -- ⚠️  Demo accounts only — do not seed these on a real production
 --     environment with real student/staff data. CHANGE OR REMOVE
 --     before any real go-live.
@@ -36,34 +34,4 @@ SELECT
     now()
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE email = 'registrar@bisa.local'
-);
-
-INSERT INTO users (id, email, password_hash, first_name, last_name, role, enabled, created_at, updated_at)
-SELECT
-    gen_random_uuid(),
-    'lecturer@bisa.local',
-    '$2b$10$3fRJk4NLrC/BwV9K09N4ieoc0NBet3vqiruGu91uodEG4pAxylwx6',
-    'Lee',
-    'Turner',
-    'LECTURER',
-    true,
-    now(),
-    now()
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'lecturer@bisa.local'
-);
-
-INSERT INTO users (id, email, password_hash, first_name, last_name, role, enabled, created_at, updated_at)
-SELECT
-    gen_random_uuid(),
-    'student@bisa.local',
-    '$2b$10$3fRJk4NLrC/BwV9K09N4ieoc0NBet3vqiruGu91uodEG4pAxylwx6',
-    'Thabo',
-    'Mokoena',
-    'STUDENT',
-    true,
-    now(),
-    now()
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'student@bisa.local'
 );

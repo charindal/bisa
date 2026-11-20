@@ -11,7 +11,7 @@ import {
 import { useAuth } from "../../auth/AuthContext";
 import type { Role } from "../../auth/types";
 
-const ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "LECTURER", "STUDENT"];
+const ROLES: Role[] = ["SUPER_ADMIN", "ADMIN"];
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -130,7 +130,7 @@ function CreateUserForm({ onCreated }: { onCreated: (user: UserRecord) => void }
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [role, setRole] = useState<Role>("STUDENT");
+  const [role, setRole] = useState<Role>("ADMIN");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,7 +145,7 @@ function CreateUserForm({ onCreated }: { onCreated: (user: UserRecord) => void }
       setPassword("");
       setFirstName("");
       setLastName("");
-      setRole("STUDENT");
+      setRole("ADMIN");
     } catch (err) {
       setError(extractMessage(err, "Could not create that user."));
     } finally {
