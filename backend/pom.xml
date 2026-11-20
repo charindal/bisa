@@ -58,6 +58,11 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-database-postgresql</artifactId>
     </dependency>
+    <!-- Declared directly so it resolves from Maven Central rather than flyway's own repo -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-toml</artifactId>
+    </dependency>
 
     <!-- JWT -->
     <dependency>
